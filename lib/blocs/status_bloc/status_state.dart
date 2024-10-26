@@ -1,9 +1,16 @@
 part of 'status_bloc.dart';
 
 enum Statuses {
-  wait,
-  activated,
-  pause,
+  wait('Wait'),
+  activated('Activated'),
+  pause('Pause');
+
+  const Statuses(this.value);
+  final String value;
+
+  factory Statuses.fromString(String status) {
+    return values.firstWhere((e) => e.value == status);
+  }
 }
 
 class StatusState extends Equatable {

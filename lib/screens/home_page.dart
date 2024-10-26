@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/status_bloc/status_bloc.dart';
 import '../common/app_colors.dart';
 import '../widgets/background_widget.dart';
 import '../widgets/switch_widget.dart';
@@ -34,6 +36,30 @@ class HomePage extends StatelessWidget {
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  BlocBuilder<StatusBloc, StatusState>(
+                    builder: (context, state) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.backGroundColorEnd,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Text(
+                          state.status.value,
+                          style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(
                     height: 20,
