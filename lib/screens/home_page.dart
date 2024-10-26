@@ -54,9 +54,10 @@ class HomePage extends StatelessWidget {
                         child: Text(
                           state.status.value,
                           style: TextStyle(
-                              color: AppColors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold),
+                            color: AppColors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       );
                     },
