@@ -32,7 +32,7 @@ class HomePage extends StatelessWidget {
                   Text(
                     'Rest now controller',
                     style: TextStyle(
-                      color: Colors.deepPurple.withOpacity(0.6),
+                      color: AppColors.appBarTextColor,
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                     ),

@@ -9,6 +9,16 @@ class StatusEvent extends Equatable {
 
 class WaitStatusEvent extends StatusEvent {}
 
-class ActivateStatusEvent extends StatusEvent {}
+class ActivateStatusEvent extends StatusEvent {
+  const ActivateStatusEvent(
+      {required this.id, required this.timeOut, required this.timePause});
+
+  final String id;
+  final num timeOut;
+  final num timePause;
+
+  @override
+  List<Object?> get props => [id, timeOut, timePause];
+}
 
 class PauseStatusEvent extends StatusEvent {}
