@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'blocs/status_bloc/status_bloc.dart';
 import 'blocs/switch_power_cubit/switch_power_cubit.dart';
 import 'screens/home_page.dart';
 
@@ -23,7 +22,6 @@ class RestNowApp extends StatelessWidget {
       home: MultiBlocProvider(
         providers: [
           BlocProvider.value(value: SwitchPowerCubit()),
-          BlocProvider.value(value: StatusBloc()),
         ],
         child: const HomePage(),
       ),
