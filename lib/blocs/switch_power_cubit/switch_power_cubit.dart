@@ -6,14 +6,20 @@ import 'package:flutter_ble_peripheral/flutter_ble_peripheral.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:stop_watch_timer/stop_watch_timer.dart';
 
-import '../status_bloc/status_bloc.dart';
-
 part 'switch_power_state.dart';
 
 class SwitchPowerCubit extends Cubit<SwitchPowerState> {
-  SwitchPowerCubit() : super(const SwitchPowerState(isPowerOn: false));
+  SwitchPowerCubit()
+      : super(
+          const SwitchPowerState(
+            isPowerOn: false,
+            status: Statuses.wait,
+            id: '',
+            timeOut: 0,
+            timePause: 0,
+          ),
+        );
 
-  StatusBloc bloc = StatusBloc();
   final timer = StopWatchTimer(
     mode: StopWatchMode.countUp,
   );
@@ -28,7 +34,7 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
 
   Future<void> switchPower(bool value) async {
     if (value) {
-      bloc.wait();
+      _switchStatusWait();
       await _powerDeviceOn();
     } else {
       await _powerDeviceOff();
@@ -41,15 +47,25 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
     required num timeOut,
     required num timePause,
   }) {
-    if (bloc.state.status == Statuses.wait) {
-      bloc.deviceActivate(id: id, timeOut: timeOut, timePause: timePause);
+    if (state.status == Statuses.wait) {
+      if (state.status == Statuses.activated) {
+        return;
+      }
+      emit(
+        state.copyWith(
+          status: Statuses.activated,
+          id: id,
+          timeOut: timeOut,
+          timePause: timePause,
+        ),
+      );
     } else {
       return;
     }
   }
 
   void alive({required String id}) {
-    if (bloc.state.id == id) {
+    if (state.id == id) {
       _timerHandle(timer);
     } else {
       return;
@@ -57,8 +73,8 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
   }
 
   void pause({required String id}) {
-    if (bloc.state.id == id) {
-      bloc.devicePause();
+    if (state.id == id) {
+      _switchStatusPause();
       _timerHandle(timer);
       _powerDeviceOff();
     } else {
@@ -67,29 +83,53 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
   }
 
   void continuation({required String id}) {
-    if (bloc.state.status == Statuses.wait) {
-      bloc.deviceActivate(
-        id: id,
-        timeOut: bloc.state.timeOut,
-        timePause: bloc.state.timePause,
-      );
+    if (state.status == Statuses.wait) {
+      _switchStatusActivate(id);
     } else {
       return;
     }
   }
 
   void stop({required String id}) {
-    if (bloc.state.id == id) {
-      if (bloc.state.status == Statuses.pause ||
-          bloc.state.status == Statuses.activated) {
-        bloc.wait();
+    if (state.id == id) {
+      if (state.status == Statuses.pause ||
+          state.status == Statuses.activated) {
+        emit(state.copyWith(status: Statuses.wait));
         _powerDeviceOff();
-      } else if (bloc.state.status == Statuses.wait) {
+      } else if (state.status == Statuses.wait) {
         return;
       }
     } else {
       return;
     }
+  }
+
+  void _switchStatusWait() {
+    if (state.status == Statuses.wait) {
+      return;
+    }
+    emit(state.copyWith(status: Statuses.wait));
+  }
+
+  void _switchStatusPause() {
+    if (state.status == Statuses.pause) {
+      return;
+    }
+    emit(state.copyWith(status: Statuses.pause));
+  }
+
+  void _switchStatusActivate(String id) {
+    if (state.status == Statuses.activated) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        status: Statuses.activated,
+        id: id,
+        timeOut: state.timeOut,
+        timePause: state.timePause,
+      ),
+    );
   }
 
   Future<void> _powerDeviceOn() async {
@@ -116,8 +156,11 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
   _timerHandle(StopWatchTimer timer) {
     timer.onStartTimer();
     timer.secondTime.listen((value) {
-      if (value > bloc.state.timeOut) {
-        bloc.wait();
+      if (value > state.timeOut) {
+        if (state.status == Statuses.wait) {
+          return;
+        }
+        emit(state.copyWith(status: Statuses.wait));
         timer.onStopTimer();
         _powerDeviceOff();
       }
