@@ -35,7 +35,6 @@ dependencies:
   flutter_blue_plus: ^1.33.5
   flutter_bloc: ^8.1.6
   flutter_switch: ^0.3.2
-  stop_watch_timer: ^3.2.1
 
 
   # The following adds the Cupertino Icons font to your application.

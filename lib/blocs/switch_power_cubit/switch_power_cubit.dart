@@ -4,7 +4,6 @@ import 'dart:developer';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_ble_peripheral/flutter_ble_peripheral.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:stop_watch_timer/stop_watch_timer.dart';
 
 part 'switch_power_state.dart';
 
@@ -15,14 +14,12 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
             isPowerOn: false,
             status: Statuses.wait,
             id: '',
-            timeOut: 0,
-            timePause: 0,
+            timeStartOut: 0,
+            timeStartPause: 0,
+            timerOut: 0,
+            timerPause: 0,
           ),
         );
-
-  final timer = StopWatchTimer(
-    mode: StopWatchMode.countUp,
-  );
 
   final AdvertiseData advertiseData = AdvertiseData(
     serviceUuid: 'bf27730d-860a-4e09-889c-2d8b6a9e0fe7',
@@ -37,15 +34,16 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
       _switchStatusWait();
       await _powerDeviceOn();
     } else {
-      await _powerDeviceOff();
+      if (state.status == Statuses.activated) {
+        await _powerDeviceOff();
+      }
     }
     emit(state.copyWith(isPowerOn: value));
   }
 
   void start({
     required String id,
-    required num timeOut,
-    required num timePause,
+    required int timeStartOut,
   }) {
     if (state.status == Statuses.wait) {
       if (state.status == Statuses.activated) {
@@ -55,8 +53,7 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
         state.copyWith(
           status: Statuses.activated,
           id: id,
-          timeOut: timeOut,
-          timePause: timePause,
+          timeStartOut: timeStartOut,
         ),
       );
     } else {
@@ -66,7 +63,27 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
 
   void alive({required String id}) {
     if (state.id == id) {
-      _timerHandle(timer);
+      var currentTimeInSeconds = 0;
+      if (state.status == Statuses.wait) {
+        return;
+      }
+      Timer.periodic(
+        const Duration(seconds: 1),
+        (timer) {
+          currentTimeInSeconds = currentTimeInSeconds + 1;
+          if (currentTimeInSeconds == state.timeStartOut + 1) {
+            timer.cancel();
+            switchPower(false);
+            emit(
+              state.copyWith(
+                status: Statuses.wait,
+              ),
+            );
+          } else {
+            emit(state.copyWith(timerOut: currentTimeInSeconds));
+          }
+        },
+      );
     } else {
       return;
     }
@@ -75,8 +92,23 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
   void pause({required String id}) {
     if (state.id == id) {
       _switchStatusPause();
-      _timerHandle(timer);
+      var currentTimeInSeconds = 0;
       _powerDeviceOff();
+      Timer.periodic(
+        const Duration(seconds: 1),
+        (timer) {
+          currentTimeInSeconds = currentTimeInSeconds + 1;
+          if (currentTimeInSeconds == state.timerOut) {
+            timer.cancel();
+            switchPower(false);
+            emit(
+              state.copyWith(
+                status: Statuses.wait,
+              ),
+            );
+          }
+        },
+      );
     } else {
       return;
     }
@@ -126,8 +158,6 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
       state.copyWith(
         status: Statuses.activated,
         id: id,
-        timeOut: state.timeOut,
-        timePause: state.timePause,
       ),
     );
   }
@@ -151,20 +181,6 @@ class SwitchPowerCubit extends Cubit<SwitchPowerState> {
     } catch (e) {
       e.toString();
     }
-  }
-
-  _timerHandle(StopWatchTimer timer) {
-    timer.onStartTimer();
-    timer.secondTime.listen((value) {
-      if (value > state.timeOut) {
-        if (state.status == Statuses.wait) {
-          return;
-        }
-        emit(state.copyWith(status: Statuses.wait));
-        timer.onStopTimer();
-        _powerDeviceOff();
-      }
-    });
   }
 
   Future<void> _requestPermissions() async {
